@@ -1,0 +1,272 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dhurandhar Spotify Clone</title>
+    <style>
+        /* CSS: Spotify Jaisa Dark Mode UI Design */
+        body {
+            background-color: #121212;
+            color: white;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .header {
+            color: #1DB954; /* Spotify Green */
+            font-size: 1.4rem;
+            margin: 15px 0;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        /* Top Media Player Card */
+        .player-card {
+            background-color: #181818;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            width: 90%;
+            max-width: 320px;
+            margin-bottom: 25px;
+            box-shadow: 0px 6px 20px rgba(0, 0, 0, 0.7);
+            border: 1px solid #282828;
+        }
+        .song-title { 
+            font-size: 1.25rem; 
+            font-weight: bold; 
+            margin: 5px 0; 
+            color: #1DB954; 
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .movie-name { color: #b3b3b3; font-size: 0.85rem; margin-bottom: 20px; }
+        
+        /* Music Control Buttons */
+        . control {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            align-items: center;
+        }
+        .btn {
+            background-color: #282828;
+            color: white;
+            border: none;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: 0.2s;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .btn:active { transform: scale(0.9); }
+        #playBtn { background-color: #1DB954; width: 60px; height: 60px; font-size: 1.4rem; color: black; }
+
+        /* Scrollable Playlist Container */
+        .playlist-container {
+            width: 90%;
+            max-width: 320px;
+            background-color: #181818;
+            border-radius: 15px;
+            padding: 15px;
+            max-height: 280px;
+            overflow-y: auto;
+            border: 1px solid #282828;
+            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.5);
+        }
+        .playlist-title {
+            font-size: 1rem;
+            margin-bottom: 12px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 6px;
+            color: #b3b3b3;
+            font-weight: bold;
+        }
+        .playlist-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 6px;
+            background-color: #242424;
+            transition: 0.2s;
+        }
+        /* Active song highlight style */
+        .playlist-item.active {
+            background-color: #1DB954;
+            color: black;
+            font-weight: bold;
+        }
+        .playlist-item.active .track-artist { color: #222; }
+        .track-details { display: flex; flex-direction: column; }
+        .track-name { font-size: 0.95rem; }
+        .track-artist { color: #b3b3b3; font-size: 0.75rem; }
+    </style>
+</head>
+<body>
+
+    <div class="header">Dhurandhar Player</div>
+
+    <!-- 1. MAIN CARD PLAYER DISPLAY -->
+    <div class="player-card">
+        <div id="currentTitle" class="song-title">Loading...</div>
+        <div class="movie-name">Movie Album</div>
+
+        <div class="controls">
+            <button class="btn" id="prevBtn">⏮</button>
+            <button class="btn" id="playBtn">▶</button>
+            <button class="btn" id="nextBtn">⏭</button>
+        </div>
+    </div>
+
+    <!-- 2. PLAYLIST SECTION (19 Tracks with Folder Path) -->
+    <div class="playlist-container">
+        <div class="playlist-title">Tracks (19 Songs Available)</div>
+        <div id="playlistList">
+            <!-- JavaScript loop se ye 19 items automatic generate ho jayenge bina code bada kiye -->
+        </div>
+    </div>
+
+    <!-- Hidden Master Audio Player Element -->
+    <audio id="masterAudio"></audio>
+
+    <!-- 3. JAVASCRIPT MASTER CODE -->
+    <script>
+        const totalTracks = 19;
+        let currentTrackNumber = 1;
+        let isPlaying = false;
+
+        // Folder Path variables set karna - 'dhrundhar song/'
+        const folderPath = "dhrundhar song/"; 
+
+        const audio = document.getElementById('masterAudio');
+        const playBtn = document.getElementById('playBtn');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const currentTitle = document.getElementById('currentTitle');
+        const playlistList = document.getElementById('playlistList');
+
+        // Step 1: HTML Ke andar automatic 19 items generate karna layout me
+        function renderPlaylistUI() {
+            playlistList.innerHTML = "";
+            for (let i = 1; i <= totalTracks; i++) {
+                const item = document.createElement('div');
+                item.className = "playlist-item";
+                item.id = `item-${i}`;
+                item.innerHTML = `
+                    <div class="track-details">
+                        <span class="track-name">Dhurandhar Track ${i}</span>
+                        <span class="track-artist">Dhurandhar Song</span>
+                    </div>
+                `;
+                // List item par touch karte hi gaana load aur play ho jaye
+                item.addEventListener('click', () => {
+                    selectAndPlayTrack(i);
+                });
+                playlistList.appendChild(item);
+            }
+        }
+
+        // Step 2: Gaana select karne ka logic (Folder Path ke saath)
+        function loadTrack(trackNum) {
+            currentTrackNumber = trackNum;
+            
+            // Sahi folder path jod kar gaane ka filename banana
+            audio.src = `${folderPath}song${currentTrackNumber}.m4a`;
+            
+            currentTitle.innerText = `Dhurandhar Track ${currentTrackNumber}`;
+
+            // Playlist UI me active gaane ko highlight green karna
+            for (let i = 1; i <= totalTracks; i++) {
+                const item = document.getElementById(`item-${i}`);
+                if (item) {
+                    if (i === currentTrackNumber) {
+                        item.classList.add('active');
+                    } else {
+                        item.classList.remove('active');
+                    }
+                }
+            }
+        }
+
+        // List item click par turant chalane ka function
+        function selectAndPlayTrack(trackNum) {
+            loadTrack(trackNum);
+            isPlaying = false; // reset state before toggle
+            togglePlay();
+        }
+
+        // Step 3: Play aur Pause ka Master Toggler
+        function togglePlay() {
+            if (!isPlaying) {
+                audio.play()
+                    .then(() => {
+                        isPlaying = true;
+                        playBtn.innerText = '⏸'; // Pause icon dikhana
+                    })
+                    .catch(e => {
+                        alert(`Gaana play nahi ho raha!\n\n💡 Yeh check karein:\n1. Kya 'dhrundhar song' folder me 'song${currentTrackNumber}.m4a' naam ki file maujood hai?\n2. Kya folder ka naam aur file ka naam bilkul chhota (lowercase) hai?`);
+                        isPlaying = false;
+                        playBtn.innerText = '▶';
+                    });
+            } else {
+                audio.pause();
+                isPlaying = false;
+                playBtn.innerText = '▶'; // Play icon dikhana
+            }
+        }
+
+        // Play button click handle
+        playBtn.addEventListener('click', togglePlay);
+
+        // Next Button Trigger Logic
+        nextBtn.addEventListener('click', () => {
+            let nextTrack = currentTrackNumber + 1;
+            if (nextTrack > totalTracks) nextTrack = 1; // 19 khatam hote hi wapas 1 par
+            
+            loadTrack(nextTrack);
+            if (isPlaying) {
+                audio.play().catch(e => console.log(e));
+            } else {
+                togglePlay();
+            }
+        });
+
+        // Previous Button Trigger Logic
+        prevBtn.addEventListener('click', () => {
+            let prevTrack = currentTrackNumber - 1;
+            if (prevTrack < 1) prevTrack = totalTracks; // 1 se peeche jaane par direct 19 par
+            
+            loadTrack(prevTrack);
+            if (isPlaying) {
+                audio.play().catch(e => console.log(e));
+            } else {
+                togglePlay();
+            }
+        });
+
+        // Step 4: Automatic Next Song Play hona (Jab gaana end ho jaye)
+        audio.addEventListener('ended', () => {
+            nextBtn.click();
+        });
+
+        // App ko initialize (shuru) karna
+        renderPlaylistUI();
+        loadTrack(1); // Default pehla gaana load rahega
+    </script>
+</body>
+</html>
